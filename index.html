@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<title>Stylize</title>
+<style type="text/css">
+select, textarea {
+	font-size: x-large;
+}
+textarea {
+	width: 100%;
+	height: 9em;
+}
+</style>
+<head>
+	<script>
+	(function(window) {
+		'use strict';
+		let chr = x => String.fromCharCode(x);
+		let ord = c => c.charCodeAt(0);
+		const ChrMaps = {
+			circle: [
+				{
+					from: {
+						lo: ord('A'),
+						hi: ord('Z')
+					},
+					to: ord('Ⓐ')
+				},
+				{
+					from: {
+						lo: ord('a'),
+						hi: ord('z')
+					},
+					to: ord('ⓐ')
+				},
+				{
+					from: {
+						lo: ord('1'),
+						hi: ord('9')
+					},
+					to: ord('⓵')
+				},
+			]
+		};
+		let inputEl = null;
+		let outputEl = null;
+		let conversionTypeEl = null;
+		let convert = t => {
+			const mappings = ChrMaps[t];
+			let output = '';
+			for (let i = 0; i < inputEl.value.length; ++i) {
+				let c = inputEl.value[i];
+				let code = ord(c);
+				let found = false;
+				for (let mapping of mappings) {
+					if (mapping.from.lo <= code && code <= mapping.from.hi) {
+						output += chr(mapping.to + code - mapping.from.lo);
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					output += c;
+				}
+			}
+			outputEl.value = output;
+		};
+		let transform = () => {
+			convert(conversionTypeEl.options[conversionTypeEl.selectedIndex].value);
+		};
+		let main = () => {
+			conversionTypeEl = document.getElementById('conversion-type');
+			outputEl = document.getElementById('output');
+			inputEl = document.getElementById('input');
+			inputEl.addEventListener('input', transform);
+		};
+		window.addEventListener('load', main);
+	})(window);
+	</script>
+</head>
+<body>
+	<select id="conversion-type">
+		<option value="circle">Circles</option>
+	</select>
+	<div>
+		<textarea id="input"></textarea>
+	</div>
+	<div>
+		<textarea id="output" readonly></textarea>
+	</div>
+</body>
+</html>

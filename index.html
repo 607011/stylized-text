@@ -3,90 +3,192 @@
 <meta charset="utf-8">
 <title>Stylize</title>
 <style type="text/css">
+* {
+  margin: 0;
+  padding: 0;
+}
+body {
+  padding: 4px 4px;
+}
 select, textarea {
-	font-size: x-large;
+  font-size: large;
+}
+.select-wrapper {
+  cursor: pointer;
+  display: inline-block;
+  width: 240px;
+  height: 30px;
+  overflow: hidden;
+  background-image: url(dropdown.png);
+  background-position: calc(100% - 11px) 0;
+  background-repeat: no-repeat;
+  background-color: #3bc246;
+  border: 0;
+}
+select {
+  margin: 0;
+  border: 0;
+  height: 29px;
+  width: calc(100% - 32px);
+  position: relative;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  align-items: center;
+  white-space: pre;
+  display: inline-block;
+  text-align: start;
+  background-color: transparent;
+  color: white;
+  padding: .2ex .3em;
 }
 textarea {
-	width: 100%;
-	height: 9em;
+  width: 90%;
+  height: 9em;
+  padding: 0.25ex 0.25em;
+  border: 1px solid #232;
+}
+#output {
+  font-size: x-large;
+  white-space: pre;
 }
 </style>
 <head>
-	<script>
-	(function(window) {
-		'use strict';
-		let chr = x => String.fromCharCode(x);
-		let ord = c => c.charCodeAt(0);
-		const ChrMaps = {
-			circle: [
-				{
-					from: {
-						lo: ord('A'),
-						hi: ord('Z')
-					},
-					to: ord('Ⓐ')
-				},
-				{
-					from: {
-						lo: ord('a'),
-						hi: ord('z')
-					},
-					to: ord('ⓐ')
-				},
-				{
-					from: {
-						lo: ord('1'),
-						hi: ord('9')
-					},
-					to: ord('⓵')
-				},
-			]
-		};
-		let inputEl = null;
-		let outputEl = null;
-		let conversionTypeEl = null;
-		let convert = t => {
-			const mappings = ChrMaps[t];
-			let output = '';
-			for (let i = 0; i < inputEl.value.length; ++i) {
-				let c = inputEl.value[i];
-				let code = ord(c);
-				let found = false;
-				for (let mapping of mappings) {
-					if (mapping.from.lo <= code && code <= mapping.from.hi) {
-						output += chr(mapping.to + code - mapping.from.lo);
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
-					output += c;
-				}
-			}
-			outputEl.value = output;
-		};
-		let transform = () => {
-			convert(conversionTypeEl.options[conversionTypeEl.selectedIndex].value);
-		};
-		let main = () => {
-			conversionTypeEl = document.getElementById('conversion-type');
-			outputEl = document.getElementById('output');
-			inputEl = document.getElementById('input');
-			inputEl.addEventListener('input', transform);
-		};
-		window.addEventListener('load', main);
-	})(window);
-	</script>
+  <script>
+  (function(window) {
+    'use strict';
+
+    let chr = x => String.fromCodePoint(x);
+    let ord = c => c.codePointAt(0);
+    let range = (lo, hi) => { return {lo: lo, hi: hi}; };
+
+    const SmallLetters = range(ord('a'), ord('z'));
+    const CapitalLetters = range(ord('A'), ord('Z'));
+    const DigitsNonNull = range(ord('1'), ord('9'));
+    const Digits = range(ord('0'), ord('9'));
+
+    const CharMaps = {
+      default: [
+        {
+          from: {lo: 0, hi: 0xffffffff},
+          to: 0
+        }
+      ],
+      circles: [
+        {
+          from: CapitalLetters,
+          to: ord('Ⓐ')
+        },
+        {
+          from: SmallLetters,
+          to: ord('ⓐ')
+        },
+        {
+          from: DigitsNonNull,
+          to: 0x2460
+        },
+        {
+          from: ord('0'),
+          to: 0x24EA
+        }
+      ],
+      fraktur: [
+        {
+          from: CapitalLetters,
+          to: 0x1D56C
+        },
+        {
+          from: SmallLetters,
+          to: 0x1D586
+        }
+      ],
+      squares: [
+        {
+          from: CapitalLetters,
+          to: ord('🄰')
+        },
+        {
+          from: SmallLetters,
+          to: ord('🄰')
+        }
+      ],
+      negative_squares: [
+        {
+          from: CapitalLetters,
+          to: ord('🅰')
+        },
+        {
+          from: SmallLetters,
+          to: ord('🅰')
+        }
+      ]
+    };
+
+    let inputEl = null;
+    let outputEl = null;
+    let conversionTypeEl = null;
+
+    let convert = t => {
+      const mappings = CharMaps[t in CharMaps ? t : 'default'];
+      let output = '';
+      for (let i = 0; i < inputEl.value.length; ++i) {
+        let c = inputEl.value[i];
+        let code = ord(c);
+        let found = false;
+        for (let mapping of mappings) {
+          if (typeof(mapping.from) === 'number') {
+            if (mapping.from === code) {
+              output += chr(mapping.to);
+              found = true;
+              break;
+            }
+          }
+          else if (mapping.from.lo <= code && code <= mapping.from.hi) {
+            output += chr(mapping.to + code - mapping.from.lo);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          output += c;
+        }
+      }
+      outputEl.innerHTML = output;
+    };
+
+    let transform = () => {
+      convert(conversionTypeEl.options[conversionTypeEl.selectedIndex].value);
+      inputEl.focus();
+    };
+
+    let main = () => {
+      conversionTypeEl = document.getElementById('conversion-type');
+      conversionTypeEl.addEventListener('input', transform);
+      inputEl = document.getElementById('input');
+      inputEl.addEventListener('input', transform);
+      inputEl.focus();
+      outputEl = document.getElementById('output');
+    };
+
+    window.addEventListener('load', main);
+  })(window);
+  </script>
 </head>
 <body>
-	<select id="conversion-type">
-		<option value="circle">Circles</option>
-	</select>
-	<div>
-		<textarea id="input"></textarea>
-	</div>
-	<div>
-		<textarea id="output" readonly></textarea>
-	</div>
+  <div class="select-wrapper">
+    <select id="conversion-type">
+      <option value="fraktur">Fraktur</option>
+      <option value="negative_squares" selected>Squares (negative)</option>
+      <option value="circles">Circles</option>
+      <option value="squares">Squares</option>
+    </select>
+  </div>
+  <div>
+    <textarea id="input"></textarea>
+  </div>
+  <div>
+    <div id="output"></div>
+  </div>
 </body>
 </html>

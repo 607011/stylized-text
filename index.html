@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
-<meta charset="utf-8">
-<title>Stylize</title>
+  <title>Text Styler</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style type="text/css">
 * {
   margin: 0;
@@ -59,9 +60,19 @@ textarea {
   (function(window) {
     'use strict';
 
-    let chr = x => String.fromCodePoint(x);
-    let ord = c => c.codePointAt(0);
-    let range = (lo, hi) => { return {lo: lo, hi: hi}; };
+    const chr = x => String.fromCodePoint(x);
+    const ord = c => c.codePointAt(0);
+    const range = (lo, hi) => { return {lo: lo, hi: hi || lo}; };
+    const charlist = l => {
+      let result = [];
+      const codes = l.split('').map(c => c.codePointAt(0));
+      for (let i = 0; i < codes.length; /**/) {
+        const code = codes[i];
+        result.push(chr(l.codePointAt(i)));
+        i = i + ((0xD800 <= code && code <= 0xDBFF) ? 2 : 1);
+      }
+      return result;
+    };
 
     const SmallLetters = range(ord('a'), ord('z'));
     const CapitalLetters = range(ord('A'), ord('Z'));
@@ -89,11 +100,21 @@ textarea {
           to: 0x2460
         },
         {
-          from: ord('0'),
+          from: range(ord('0')),
           to: 0x24EA
         }
       ],
       fraktur: [
+        {
+          from: CapitalLetters,
+          to: charlist('𝔄𝔅ℭ𝔇𝔈𝔉𝔊ℌℑ𝔍𝔎𝔏𝔐𝔑𝔒𝔓𝔔ℜ𝔖𝔗𝔘𝔙𝔚𝔛𝔜ℨ')
+        },
+        {
+          from: SmallLetters,
+          to: charlist('𝔞𝔟𝔠𝔡𝔢𝔣𝔤𝔥𝔦𝔧𝔨𝔩𝔪𝔫𝔬𝔭𝔮𝔯𝔰𝔱𝔲𝔳𝔴𝔵𝔶𝔷')
+        }
+      ],
+      fraktur_bold: [
         {
           from: CapitalLetters,
           to: 0x1D56C
@@ -133,22 +154,22 @@ textarea {
       const mappings = CharMaps[t in CharMaps ? t : 'default'];
       let output = '';
       for (let i = 0; i < inputEl.value.length; ++i) {
-        let c = inputEl.value[i];
-        let code = ord(c);
+        const c = inputEl.value[i];
+        const code = ord(c);
         let found = false;
         for (let mapping of mappings) {
-          if (typeof(mapping.from) === 'number') {
-            if (mapping.from === code) {
-              output += chr(mapping.to);
-              found = true;
-              break;
+          if (mapping.from.lo <= code && code <= mapping.from.hi) {
+            let idx = code - mapping.from.lo;
+            if (mapping.to instanceof Array) {
+              output += mapping.to[idx];
             }
-          }
-          else if (mapping.from.lo <= code && code <= mapping.from.hi) {
-            output += chr(mapping.to + code - mapping.from.lo);
+            else {
+              output += chr(mapping.to + idx);
+            }
             found = true;
-            break;
           }
+          if (found)
+            break;
         }
         if (!found) {
           output += c;
@@ -157,12 +178,12 @@ textarea {
       outputEl.innerHTML = output;
     };
 
-    let transform = () => {
+    const transform = () => {
       convert(conversionTypeEl.options[conversionTypeEl.selectedIndex].value);
       inputEl.focus();
     };
 
-    let main = () => {
+    const main = () => {
       conversionTypeEl = document.getElementById('conversion-type');
       conversionTypeEl.addEventListener('input', transform);
       inputEl = document.getElementById('input');
@@ -179,13 +200,14 @@ textarea {
   <div class="select-wrapper">
     <select id="conversion-type">
       <option value="fraktur">Fraktur</option>
-      <option value="negative_squares" selected>Squares (negative)</option>
+      <option value="fraktur_bold">Fraktur bold</option>
       <option value="circles">Circles</option>
       <option value="squares">Squares</option>
+      <option value="negative_squares">Squares (negative)</option>
     </select>
   </div>
   <div>
-    <textarea id="input"></textarea>
+    <textarea id="input" placeholder="Type your text here ..."></textarea>
   </div>
   <div>
     <div id="output"></div>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
-  <title>Text Styler</title>
-  <meta charset="utf-8">
+<title>Text Styler</title>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style type="text/css">
 * {
@@ -67,9 +67,8 @@ textarea {
       let result = [];
       const codes = l.split('').map(c => c.codePointAt(0));
       for (let i = 0; i < codes.length; /**/) {
-        const code = codes[i];
         result.push(chr(l.codePointAt(i)));
-        i = i + ((0xD800 <= code && code <= 0xDBFF) ? 2 : 1);
+        i += (0xD800 <= codes[i] &&  codes[i] <= 0xDBFF) ? 2 : 1;
       }
       return result;
     };
